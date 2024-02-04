@@ -6,21 +6,22 @@ Summary(pl.UTF-8):	Narzędzie pod X11 monitorujące zasoby systemowe
 Summary(pt_BR.UTF-8):	Utilitário X11 para visualizar os recursos do sistema
 Summary(tr.UTF-8):	Sistem kaynaklarını denetleyen X11 yardımcı programı
 Summary(zh_CN.UTF-8):	系统资源的图形监视工具
-Name:		xosview
-Version:	1.8.4
+Name:		xosview2
+Version:	2.3.3
 Release:	1
 License:	GPL v2
 Group:		X11/Applications
 Source0:	https://downloads.sourceforge.net/xosview/%{name}-%{version}.tar.gz
-# Source0-md5:	173b9f8b7a41c3212ad5b48ac7f4c76b
+# Source0-md5:	0c2c1f718128982582f88dc516bc00e0
 Source1:	%{name}.desktop
 Source2:	%{name}.png
-Patch0:		%{name}-c++.patch
 URL:		https://xosview.sourceforge.net/
 BuildRequires:	autoconf
 BuildRequires:	automake
-BuildRequires:	libstdc++-devel
+BuildRequires:	libstdc++-devel >= 6:7
 BuildRequires:	xorg-lib-libX11-devel
+BuildRequires:	xorg-lib-libXext-devel
+BuildRequires:	xorg-lib-libXft-devel
 BuildRequires:	xorg-lib-libXpm-devel
 Requires:	xorg-lib-libXt >= 1.0.0
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
@@ -65,41 +66,41 @@ kullanımı) küçük bir pencerede grafik ortamda sunar.
 
 %prep
 %setup -q
-%patch0 -p1
-
-# --- XXX Cruft Alert!
-ln -sf config/configure.in .
-sed -e '/EXTRA_CXXFLAGS/ s/ -O3/ %{rpmcxxflags} %{rpmcppflags}/' config/aclocal.m4 > acinclude.m4
 
 %build
-%{__aclocal}
-%{__autoconf}
-cp -f %{_datadir}/automake/config.sub config
-%configure
+cd config
+%{__autoconf} -Wall configure.in > ../configure
+%{__autoheader}
+%{__mv} config.h.in ..
+cd ..
+chmod 755 configure
+CXXFLAGS="%{rpmcxxflags} -std=c++17"
+%configure \
+	--with-app-defaults=%{_appdefsdir}
 
 %{__make}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT{%{_desktopdir},%{_pixmapsdir}} \
-	$RPM_BUILD_ROOT{%{_bindir},%{_mandir}/man1,%{_appdefsdir}}
+install -d $RPM_BUILD_ROOT{%{_desktopdir},%{_pixmapsdir}}
 
 %{__make} install \
-	PREFIX_TO_USE=$RPM_BUILD_ROOT%{_prefix} \
-	MANDIR=$RPM_BUILD_ROOT%{_mandir}/man1 \
-	XAPPLOADDIR=$RPM_BUILD_ROOT%{_appdefsdir}
+	DESTDIR=$RPM_BUILD_ROOT
 
-install %{SOURCE1} $RPM_BUILD_ROOT%{_desktopdir}
-install %{SOURCE2} $RPM_BUILD_ROOT%{_pixmapsdir}
+cp -p %{SOURCE1} $RPM_BUILD_ROOT%{_desktopdir}
+cp -p %{SOURCE2} $RPM_BUILD_ROOT%{_pixmapsdir}
+
+# packaged as doc
+%{__rm} -r $RPM_BUILD_ROOT%{_docdir}/xosview2
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
-%doc CHANGES COPYING COPYING.BSD README README.linux TODO
-%attr(755,root,root) %{_bindir}/xosview
-%{_desktopdir}/xosview.desktop
-%{_pixmapsdir}/xosview.png
-%{_appdefsdir}/XOsview
-%{_mandir}/man1/xosview.1*
+%doc CHANGES COPYING COPYING.BSD README TODO doc/README.linux
+%attr(755,root,root) %{_bindir}/xosview2
+%{_desktopdir}/xosview2.desktop
+%{_pixmapsdir}/xosview2.png
+%{_appdefsdir}/XOsview2
+%{_mandir}/man1/xosview2.1*
